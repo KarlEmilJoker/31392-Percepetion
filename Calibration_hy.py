@@ -58,3 +58,10 @@ ax[0].set_title('Original image')
 ax[1].imshow(dst_l[...,[2,1,0]])
 ax[1].set_title('Undistorted image')
 
+# crop the image
+x,y,w,h = roi_l
+dst_l = dst_l[y:y+h, x:x+w]
+plt.figure(figsize=(10,10))
+plt.imshow(dst_l[...,[2,1,0]])
+
+plt.show()
