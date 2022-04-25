@@ -58,22 +58,22 @@ def getCamMatrix(images):
 
     # get the camera matrix
     ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], None, None)
-    img = cv2.imread('/home/algora/Desktop/PFAS_DTU/FinalProject/31392-Percepetion/Stereo_calibration_images/right-0000.png')
+    img = cv2.imread('Stereo_calibration_images/right-0000.png')
     h,  w = img.shape[:2]
     newcameramtx, roi = cv2.getOptimalNewCameraMatrix(mtx,dist,(w,h),1,(w,h))
 
     return newcameramtx, dist, mtx, roi, rvecs, tvecs
 
-images_right = glob.glob('/home/algora/Desktop/PFAS_DTU/FinalProject/31392-Percepetion/Stereo_calibration_images/right*.png')
+images_right = glob.glob('Stereo_calibration_images/right-*.png')
 assert images_right
 
-images_left = glob.glob('/home/algora/Desktop/PFAS_DTU/FinalProject/31392-Percepetion/Stereo_calibration_images/left*.png')
+images_left = glob.glob('Stereo_calibration_images/left-*.png')
 assert images_left
 
 cameramtx_right, dist_right, mtx_right, roi_right, rvecs_right, tvecs_right = getCamMatrix(images_right)
 cameramtx_left, dist_left, mtx_left, roi_left, rvecs_left, tvecs_left = getCamMatrix(images_left)
 
-print(cameramtx_right)
+print(cameramtx_right.astype('float32'))
 
 print(cameramtx_left)
 
@@ -88,8 +88,8 @@ print(cameramtx_left)
 #     cv2.waitKey(500)
 
 # work only on one img
-imgleft = cv2.imread('/home/algora/Desktop/PFAS_DTU/FinalProject/31392-Percepetion/Stereo_calibration_images/right-0027.png')
-imgright = cv2.imread('/home/algora/Desktop/PFAS_DTU/FinalProject/31392-Percepetion/Stereo_calibration_images/left-0027.png')
+imgleft = cv2.imread('Stereo_calibration_images/right-0027.png')
+imgright = cv2.imread('Stereo_calibration_images/left-0027.png')
 
 dstright = cv2.undistort(imgright, mtx_right, dist_right, None, cameramtx_right)
 dstleft = cv2.undistort(imgleft, mtx_left, dist_left, None, cameramtx_left)
@@ -101,13 +101,12 @@ dstright = dstright[yr:yr+hr, xr:xr+wr]
 dstleft = dstleft[yl:yl+hl, xl:xl+wl]
 
 (h, w, d) = dstright.shape
-
+plt.figure(figsize=(10,10))
+plt.imshow(dstleft[...,[2,1,0]])
 cv2.imshow('original right ', imgright)
 cv2.imshow('original left', imgleft)
-cv2.imshow('undistorted right', dstright)
-cv2.imshow('undistorted left', dstleft)
+# cv2.imshow('undistorted right', dstright)
+# cv2.imshow('undistorted left', dstleft)
 
-
-
-
+plt.show()
 cv2.waitKey(0)

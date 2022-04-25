@@ -48,15 +48,8 @@ for fname in left_rs:
     # If found, add object points, image points (after refining them)
     if ret == True:
         objpoints_l.append(objp_l)
-
         imgpoints_l.append(corners)
 
-        # Draw and display the corners
-        img = cv2.drawChessboardCorners(img, (nb_vertical,nb_horizontal), corners,ret)
-#         cv2.imshow('img',img)
-#         cv2.waitKey(500)
-
-# cv2.destroyAllWindows()
 
 ret_l, mtx_l, dist_l, rvecs_l, tvecs_l = cv2.calibrateCamera(objpoints_l, imgpoints_l, gray.shape[::-1], None, None)
 img = cv2.imread('Stereo_calibration_images/left-0000.png')
@@ -90,15 +83,10 @@ for fname in right_rs:
     #Implement findChessboardCorners here
     ret, corners = cv2.findChessboardCorners(img, (nb_vertical, nb_horizontal))
 
-
     # If found, add object points, image points (after refining them)
     if ret == True:
         objpoints_r.append(objp_r)
-
         imgpoints_r.append(corners)
-
-        # Draw and display the corners
-        img = cv2.drawChessboardCorners(img, (nb_vertical,nb_horizontal), corners,ret)
 
 # FOR RIGHT IMAGES ONLY!!!
 ret_r, mtx_r, dist_r, rvecs_r, tvecs_r = cv2.calibrateCamera(objpoints_r, imgpoints_r, gray.shape[::-1], None, None)
@@ -121,6 +109,14 @@ ax[1].set_title('Undistorted image')
 # crop the image
 x,y,w,h = roi_l
 dst_l = dst_l[y:y+h, x:x+w]
+
+cameramtx_left = [[112.28690338, 0., 982.05689904],
+                  [0, 111.80508423, 582.24763194],
+                  [0., 0., 1.]]
+
+cameramtx_right = [[4.12920609e+01, 0.0, 1.20742963e+03],
+ [0.00000000e+00, 5.25937042e+01, 6.71338991e+02],
+ [0.00000000e+00, 0.00000000e+00, 1.00000000e+00]]
 plt.figure(figsize=(10,10))
 plt.imshow(dst_l[...,[2,1,0]])
 
