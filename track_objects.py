@@ -19,7 +19,7 @@ images_left.sort()
 
 
 def getBG(images):
-    frame_indices=random.sample(range(1, len(images)), 50)
+    frame_indices=random.sample(range(1, len(images)), 20)
     #frame_indices = len(images) * np.random.uniform(size=50)
     frames = []
     for i in frame_indices:
@@ -52,16 +52,18 @@ def getPointsFromCenter(c,w,h):
 background=getBG(images_left)
 cv2.imshow('Detected Objects', getBG(images_left))
 # convert the background model to grayscale format
-background = cv2.cvtColor(background, cv2.COLOR_BGR2GRAY)
+backgroundgray = cv2.cvtColor(background, cv2.COLOR_BGR2GRAY)
 
 h, w = cv2.imread(images_left[0]).shape[:2] # size of the images (pixels)
-
+print(h)
 out = cv2.VideoWriter('video.avi',cv2.VideoWriter_fourcc('M','J','P','G'), 15, (2560,720))
 
 mask_belt_x = np.zeros((h,w),dtype='uint8')
-mask_belt_x[:,400:1200] = 255
+mask_belt_x[:,400:1150] = 255
 
-for i in range(n_images):
+kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3,3))
+
+for i in range(100, n_images):
 
     # grab current frame
     frame = cv2.imread(images_left[i])
@@ -69,20 +71,23 @@ for i in range(n_images):
     orig_frame = frame.copy()
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     # find the difference between current frame and base frame
-    frame_diff = cv2.absdiff(gray, background)
+    frame_diff = cv2.absdiff(gray, backgroundgray)
+    np.multiply(frame_diff, 5)
     frame_diff = cv2.bitwise_and(frame_diff, mask_belt_x)
     # thresholding to convert the frame to binary
     ret, thres = cv2.threshold(frame_diff, 50, 255, cv2.THRESH_BINARY)
     # dilate the frame a bit to get some more white area...
     # ... makes the detection of contours a bit easier
     dilate_frame = cv2.dilate(thres, None, iterations=2)
+    dilate_frame = cv2.morphologyEx(dilate_frame, cv2.MORPH_CLOSE, kernel)
+    #dilate_frame = cv2.Canny(dilate_frame, h, w)
     # find the contours around the white segmented areas
     contours, hierarchy = cv2.findContours(dilate_frame, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     # draw the contours, not strictly necessary
     for i, cnt in enumerate(contours):
         cv2.drawContours(frame, contours, i, (0, 0, 255), 3)
     for contour in contours:
-        # continue through the loop if contour area is less than 500...
+        # continue through the loop if contour area is less than 2500...
         # ... helps in removing noise detection
         if cv2.contourArea(contour) < 2500:
             continue
@@ -91,81 +96,14 @@ for i in range(n_images):
         # draw the bounding boxes
         cv2.rectangle(orig_frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
-    cv2.imshow('Detected Objects', orig_frame)
+    cv2.imshow('Detected Objects', dilate_frame)
     out.write(orig_frame)
     if cv2.waitKey(100) & 0xFF == ord('q'):
         break
 cv2.waitKey(0)
 cv2.destroyAllWindows()
 
-# dir_calib = "../31392-Percepetion/calibration_matrix/"
-# mtx_P_l = np.load(dir_calib + "projection_matrix_l.npy")
-# mtx_P_r = np.load(dir_calib + "projection_matrix_r.npy")
-# rect_map_l_x = np.load(dir_calib + "map_l_x.npy")
-# rect_map_l_y = np.load(dir_calib + "map_l_y.npy")
-# rect_map_r_x = np.load(dir_calib + "map_r_x.npy")
-# rect_map_r_y = np.load(dir_calib + "map_r_y.npy")
-#
-# backSub = cv2.createBackgroundSubtractorKNN()
-#
-# h, w = cv2.imread(images_left[0]).shape[:2]
-# # define previous image
-# prev_img = cv2.imread(images_left[0])
-# prev_gray = cv2.cvtColor(prev_img, cv2.COLOR_BGR2GRAY)
-#
-# # initialize frame_prev and features_prev
-# feat_prev = np.empty((0,1,2),dtype='float32')
-# gray_prev = np.zeros((h,w),dtype='uint8')
-#
-# # define region of the belt
-# belt_contour = np.array([[[387,476]],[[464,696]],[[1217,359]],[[1131,260]]])
-# belt_x0 = 400 # x start of the conveyor (pixels)
-# belt_x1 = 1240 # x end of the conveyor (pixels)
-#
-# # define kernels
-# kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3,3))
-#
-# # initialize object count and status
-# obj_count = 0
-# object_on_conveyor = None
-# obj_present = False # (is there an object on the scene?)
-# obj_found = False # (was it possible to localize the object on the scene?)
-#
-# # initialize object classification counter
-# obj_type_hist = {"cup":0,"book":0,"box":0}
-#
-# # triangulation constants
-# template_h = 10
-# template_w = 60
-#
-# # roi within tamplate is being matched
-# roi_h = 10
-# roi_left_off = -230
-# roi_right_off = -30
-#
-# # %% TRACKING AND CLASSIFICATION
-# out = cv2.VideoWriter('video.avi',cv2.VideoWriter_fourcc('M','J','P','G'), 15, (2560,720))
-#
-#
-#
-# for i in range(n_images):
-#
-#     # grab current frame
-#     frame = cv2.imread(images_left[i])
-#     frame_right = cv2.imread(images_right[i])
-#     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-#     gray_right = cv2.cvtColor(frame_right, cv2.COLOR_BGR2GRAY)
-#
-#     # undistort and rectify left and right image
-#     frame = cv2.remap(frame, rect_map_l_x, rect_map_l_y, cv2.INTER_LINEAR)
-#     frame_right = cv2.remap(frame_right, rect_map_r_x, rect_map_r_y, cv2.INTER_LINEAR)
-#     gray = cv2.remap(gray, rect_map_l_x, rect_map_l_y, cv2.INTER_LINEAR)
-#     gray_right = cv2.remap(gray_right, rect_map_r_x, rect_map_r_y, cv2.INTER_LINEAR)
-#
-#     # get blue mask that characterizes the conveyor belt
-#     mask_blue = getBlueMask(frame)
-#
-#     mask_fg = cv2.bitwise_and(mask_fg, mask_blue)
+
 
 
 
