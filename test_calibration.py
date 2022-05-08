@@ -83,7 +83,13 @@ np.save(dir_calib + "map_l_x", map1x)
 np.save(dir_calib + "map_l_y", map1y)
 np.save(dir_calib + "map_r_x", map2x)
 np.save(dir_calib + "map_r_y", map2y)
+np.save(dir_calib + "mtx_l", mtx_l)
+np.save(dir_calib + "mtx_r", mtx_r)
+np.save(dir_calib + "mtx_Q", mtx_Q)
+np.save(dir_calib + "mtx_T", mtx_T)
 
+
+print(mtx_Q)
 # %% CHECK RESULT CORRECTNESS
 
 img_l = cv2.imread(images_left[27])
