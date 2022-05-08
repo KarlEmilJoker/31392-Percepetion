@@ -3,7 +3,7 @@ import cv2
 from matplotlib import pyplot as plt
 
 
-def get_Depth(left_img, right_img, px_c, py_c):  # left and right undistoreted and rectified images (3 channels)
+def get_disparity(left_img, right_img, px_c, py_c):  # left and right undistoreted and rectified images (3 channels)
     focal_lenght = 685
     baseline = 120
     roi_gap = 5
@@ -20,18 +20,11 @@ def get_Depth(left_img, right_img, px_c, py_c):  # left and right undistoreted a
 
     disparity = stereo.compute(left_img, right_img).astype(np.float32) / 16.0
     disparity = cv2.medianBlur(disparity, 5)
-    depth = focal_lenght * baseline / (disparity[py_c, px_c])  # in mm
-
-    disp_list = [0]  # if depth is not found zero is returned
-    for x in [px_c - 5, px_c, px_c + 5]:
-        for y in [roi_gap * 2 - roi_gap, roi_gap * 2, roi_gap * 2 + roi_gap]:
-            disp_list.append((disparity[y, x]))
-    result = max(disp_list)
-
-    return result, depth
-
-# def getDepth(x, y, disparity, focal_lenght=685, baseline=120):
-#     return focal_lenght*baseline/(disparity[y,x]/16.0) #in mm
+    depth = focal_lenght*baseline/(disparity[py_c,px_c]/16.0) #in mm
+    # print('disparity')
+    print(disparity[py_c, px_c])
+    result = disparity[py_c, px_c]
+    return result
 
 if __name__ == "__main__":
     # map the matrix file with images
@@ -47,7 +40,7 @@ if __name__ == "__main__":
     # plt.imshow(imgL, cmap='gray')
     # plt.show()
     print(imgR.shape)
-    disp, depth = get_Depth(imgL, imgR, 1160, 318)
+    disp, depth = get_disparity(imgL, imgR, 1160, 318)
 
     h, w = disp.shape[:2]
     f = .8 * w
