@@ -215,11 +215,11 @@ back_frame_l = cv2.remap(back_frame_l, rect_map_left_x, rect_map_left_y, cv2.INT
 back_frame_r = cv2.imread(images_right[0])
 back_frame_r = cv2.remap(back_frame_r, rect_map_right_x, rect_map_right_y, cv2.INTER_LINEAR)
 
-bgMOG = cv2.createBackgroundSubtractorMOG2(30, 16,
-                                           False)  # createBackgroundSubtractorMOG2 dectect the moving object
-_ = bgMOG.apply(back_frame_l)
+# bgMOG = cv2.createBackgroundSubtractorMOG2(30, 16,
+#                                            False)  # createBackgroundSubtractorMOG2 dectect the moving object
+# _ = bgMOG.apply(back_frame_l)
 
-bgMOG2 = cv2.createBackgroundSubtractorMOG2(30, 16,
+bgMOG2 = cv2.createBackgroundSubtractorMOG2(70, 16,
                                             False)  # createBackgroundSubtractorMOG2 dectect the moving object
 _ = bgMOG2.apply(back_frame_r)
 fgbg = cv2.createBackgroundSubtractorKNN(history=600, dist2Threshold=800, detectShadows=False)
@@ -233,11 +233,11 @@ obj_dectect_l = False
 obj_dectect_r = False
 obj_picture = np.zeros((1, 1, 3), dtype="uint8")
 pre_center = []
-start, end = 80, -1
+start, end = 10, -1
 disp = 0
 
 # %% TRACKING AND CLASSIFICATION
-out = cv2.VideoWriter('Track_3d.avi', cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), 15, (1280, 720))
+out = cv2.VideoWriter('Track_3d_final.avi', cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), 15, (1280, 720))
 
 for i, (imgL, imgR) in enumerate(zip(images_left[start:end], images_right[start:end])):
 
@@ -307,7 +307,7 @@ for i, (imgL, imgR) in enumerate(zip(images_left[start:end], images_right[start:
             mask_roi = np.zeros((h, w), dtype='uint8')
             p1 = (int(center_x_l - 300 / 2), int(center_y_l - 200 / 2))
             p2 = (int(center_x_l + 300 / 2), int(center_y_l + 200 / 2))
-            print(p1, p2)
+            # print(p1, p2)
             mask_roi[p1[1]:p2[1], p1[0]:p2[0]] = 255
             mask_obj = cv2.bitwise_and(mask_roi, mask_fg)
             obj_picture = cv2.bitwise_or(frame, frame, mask=mask_obj)
