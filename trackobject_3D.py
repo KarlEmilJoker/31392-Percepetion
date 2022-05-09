@@ -1,24 +1,31 @@
 import cv2
+import matplotlib.pyplot as plt
 import numpy as np
 import glob
 from get_depth import *
 from numpy.linalg import inv, pinv
 import imutils
+import tensorflow as tf
+from tensorflow.keras.datasets import cifar10
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Dropout, Activation, Flatten
+from tensorflow.keras.layers import Conv2D, MaxPooling2D
 
 # initial max
-mtx_P_l = np.load("Matrix/projection_matrix_l.npy")
-mtx_P_r = np.load("Matrix/projection_matrix_r.npy")
-rect_map_left_x = np.load(r'Matrix\map_l_x.npy')
-rect_map_left_y = np.load(r'Matrix\map_l_y.npy')
-rect_map_right_x = np.load(r'Matrix\map_r_x.npy')
-rect_map_right_y = np.load(r'Matrix\map_r_y.npy')
-mtx_l = np.load(r'Matrix\mtx_l.npy')
-mtx_r = np.load(r'Matrix\mtx_r.npy')
-mtx_Q = np.load(r'Matrix\mtx_Q.npy')
-mtx_T = np.load(r'Matrix\mtx_T.npy')
+mtx_P_l = np.load("/home/karl/DTU/Perception/git/31392-Percepetion/Matrix/projection_matrix_l.npy")
+mtx_P_r = np.load("/home/karl/DTU/Perception/git/31392-Percepetion/Matrix/projection_matrix_r.npy")
+rect_map_left_x = np.load(r'/home/karl/DTU/Perception/git/31392-Percepetion/Matrix/map_l_x.npy')
+rect_map_left_y = np.load(r'/home/karl/DTU/Perception/git/31392-Percepetion/Matrix/map_l_y.npy')
+rect_map_right_x = np.load(r'/home/karl/DTU/Perception/git/31392-Percepetion/Matrix/map_r_x.npy')
+rect_map_right_y = np.load(r'/home/karl/DTU/Perception/git/31392-Percepetion/Matrix/map_r_y.npy')
+mtx_l = np.load(r'/home/karl/DTU/Perception/git/31392-Percepetion/Matrix/mtx_l.npy')
+mtx_r = np.load(r'/home/karl/DTU/Perception/git/31392-Percepetion/Matrix/mtx_r.npy')
+mtx_Q = np.load(r'/home/karl/DTU/Perception/git/31392-Percepetion/Matrix/mtx_Q.npy')
+mtx_T = np.load(r'/home/karl/DTU/Perception/git/31392-Percepetion/Matrix/mtx_T.npy')
 
 # LOAD IMAGES
-dataset = 'Stereo_conveyor_with_occlusions'
+dataset = '/home/karl/DTU/Perception/images'
 images_left = glob.glob(dataset + '/left/*.png')
 images_right = glob.glob(dataset + '/right/*.png')
 assert images_right, images_left
@@ -236,6 +243,8 @@ pre_center = []
 start, end = 10, -1
 disp = 0
 
+model = tf.keras.models.load_model('my_model')
+clasificationtracker =[0, 0, 0]
 # %% TRACKING AND CLASSIFICATION
 out = cv2.VideoWriter('Track_3d_final.avi', cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), 15, (1280, 720))
 
@@ -261,8 +270,7 @@ for i, (imgL, imgR) in enumerate(zip(images_left[start:end], images_right[start:
 
     if obj_dectect_l and center_x_l < 1210:
 
-        cv2.circle(frame, (int(center_x_l), int(center_y_l)), int(radius_l), (0, 0, 255), 2)  # cirle
-        cv2.circle(frame, (int(center_x_l), int(center_y_l)), 5, (0, 0, 255), -1)  # center
+
         # print(pre_center)
         # center_x_r = center_x_l - 100
         # center_y_r = center_y_l
@@ -310,8 +318,24 @@ for i, (imgL, imgR) in enumerate(zip(images_left[start:end], images_right[start:
             # print(p1, p2)
             mask_roi[p1[1]:p2[1], p1[0]:p2[0]] = 255
             mask_obj = cv2.bitwise_and(mask_roi, mask_fg)
-            obj_picture = cv2.bitwise_or(frame, frame, mask=mask_obj)
+            obj_picture = cv2.bitwise_or(frame, frame)
+            #obj_picture = cv2.bitwise_or(frame, frame, mask=mask_obj)
             obj_picture = obj_picture[p1[1]:p2[1], p1[0]:p2[0]]
+
+            obj_picture = cv2.resize(obj_picture, (100, 100))
+            obj_pictureGray = cv2.cvtColor(obj_picture, cv2.COLOR_BGR2GRAY)
+            #plt.imshow(obj_picture)
+            #plt.show()
+            #cv2.imshow('obj', obj_pictureGray)
+            obj_pictureGray = obj_pictureGray[np.newaxis, :, :,np.newaxis]
+            classification = model.predict(obj_pictureGray)
+            if point3D[0] / 10 < 0:
+                if classification[0][2] == 1.0:
+                    clasificationtracker[2] = clasificationtracker[2]+1
+                if classification[0][1] == 1.0:
+                    clasificationtracker[1] = clasificationtracker[1] + 1
+                if classification[0][0] == 1.0:
+                    clasificationtracker[0] = clasificationtracker[0] + 1
             # classify object
             # obj_type = myClassifier.detectAndClassify(obj_picture)
 
@@ -321,7 +345,8 @@ for i, (imgL, imgR) in enumerate(zip(images_left[start:end], images_right[start:
             # vis_obj_picture = imutils.resize(obj_picture, height=vis_obj_height)
             # frame[vis_object_y:vis_object_y + vis_obj_height,
             # vis_object_x:(vis_object_x + vis_obj_picture.shape[1])] = vis_obj_picture
-
+        cv2.circle(frame, (int(center_x_l), int(center_y_l)), int(radius_l), (0, 0, 255), 2)  # cirle
+        cv2.circle(frame, (int(center_x_l), int(center_y_l)), 5, (0, 0, 255), -1)  # center
     # if object reaches the end of the conveyor:
     if obj_track and center_x_l <= 450 and center_y_l > 580:
         # prepare for next object (reset status and roi)
@@ -331,6 +356,7 @@ for i, (imgL, imgR) in enumerate(zip(images_left[start:end], images_right[start:
         obj_dectect_r = False
         disp = 0
         cv2.putText(frame, 'Object out', (10, 100), cv2.FONT_HERSHEY_PLAIN, 2, (255, 0, 0), 2, 5)
+        clasificationtracker = [0, 0, 0]
         # k_x, k_P, k_u, k_F, k_H, k_R = karman_init([0, 0, 0])
 
     if obj_track and not obj_dectect_l:
@@ -357,6 +383,18 @@ for i, (imgL, imgR) in enumerate(zip(images_left[start:end], images_right[start:
         cv2.putText(frame, 'Behind the occlusion', (10, 25), cv2.FONT_HERSHEY_PLAIN, 2, (0, 255, 0), 2, 5)
         cv2.putText(frame, text2, (10, 60), cv2.FONT_HERSHEY_PLAIN, 1.5, (0, 255, 255), 2, 5)
 
+
+    # take max classification and print it
+    best_guess = np.argmax(clasificationtracker)
+    count = clasificationtracker.count(0)
+    if count < 3:
+        if best_guess == 2:
+            text3 = "Classification: Coffee Cup"
+        if best_guess == 1:
+            text3 = "Classification: Box"
+        if best_guess == 0:
+            text3 = "Classification: Book"
+        cv2.putText(frame, text3, (10, 80), cv2.FONT_HERSHEY_PLAIN, 1.5, (0, 0, 0), 2, 5)
 
     # Show the frame
     Final_frame = frame
