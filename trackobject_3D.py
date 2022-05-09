@@ -18,7 +18,7 @@ mtx_Q = np.load(r'Matrix\mtx_Q.npy')
 mtx_T = np.load(r'Matrix\mtx_T.npy')
 
 # LOAD IMAGES
-dataset = 'Stereo_conveyor_with_occlusions'
+dataset = 'Stereo_conveyor_without_occlusions'
 images_left = glob.glob(dataset + '/left/*.png')
 images_right = glob.glob(dataset + '/right/*.png')
 assert images_right, images_left
@@ -222,6 +222,7 @@ back_frame_r = cv2.remap(back_frame_r, rect_map_right_x, rect_map_right_y, cv2.I
 bgMOG2 = cv2.createBackgroundSubtractorMOG2(70, 16,
                                             False)  # createBackgroundSubtractorMOG2 dectect the moving object
 _ = bgMOG2.apply(back_frame_r)
+
 fgbg = cv2.createBackgroundSubtractorKNN(history=600, dist2Threshold=800, detectShadows=False)
 
 # initialize object count and status
@@ -237,7 +238,7 @@ start, end = 10, -1
 disp = 0
 
 # %% TRACKING AND CLASSIFICATION
-out = cv2.VideoWriter('Track_3d_final.avi', cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), 15, (1280, 720))
+out = cv2.VideoWriter('Track_3d_final_without_occ.avi', cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), 15, (1280, 720))
 
 for i, (imgL, imgR) in enumerate(zip(images_left[start:end], images_right[start:end])):
 
@@ -267,6 +268,9 @@ for i, (imgL, imgR) in enumerate(zip(images_left[start:end], images_right[start:
         # center_x_r = center_x_l - 100
         # center_y_r = center_y_l
         currect_center = np.array([[center_x_l], [center_y_l]])
+        if center_x_r == 0 or center_y_r == 0:
+            center_x_r = center_x_l - 100
+            center_y_r = center_y_l
         # triangulate point
         P = triangulate(currect_center,
                         np.array([[center_x_r], [center_y_r]]), mtx_l, mtx_r, mtx_T)
@@ -305,8 +309,8 @@ for i, (imgL, imgR) in enumerate(zip(images_left[start:end], images_right[start:
             # extract object from current frame
             h, w = cv2.imread(images_left[0]).shape[:2]  # size of the images (pixels)
             mask_roi = np.zeros((h, w), dtype='uint8')
-            p1 = (int(center_x_l - 300 / 2), int(center_y_l - 200 / 2))
-            p2 = (int(center_x_l + 300 / 2), int(center_y_l + 200 / 2))
+            p1 = (int(center_x_l - radius_l), int(center_y_l - radius_l))
+            p2 = (int(center_x_l + radius_l), int(center_y_l + radius_l))
             # print(p1, p2)
             mask_roi[p1[1]:p2[1], p1[0]:p2[0]] = 255
             mask_obj = cv2.bitwise_and(mask_roi, mask_fg)
